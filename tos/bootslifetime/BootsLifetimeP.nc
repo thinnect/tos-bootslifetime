@@ -96,6 +96,7 @@ implementation {
 			m_blf.boot = ld.boots + 1;
 			m_blf.lifetime = ld.lifetime;
 			m_blf.uptime = call Uptime.get();
+			blt_protect(&m_blf);
 			debug1("init %"PRIu32" %"PRIu32"+%"PRIu32, m_blf.boot, m_blf.lifetime, m_blf.uptime);
 		}
 		m.state = BLT_ST_READ;
