@@ -105,14 +105,13 @@ implementation {
 
 	event error_t Halt.halt(uint32_t grace) {
 		if(m.state > BLT_ST_OFF) {
-			bool good = blt_good(&m_blf);
-			if(good) {
-				lifetime_data_t ld;
+			lifetime_data_t ld = { 0, 0 };
+			if(blt_good(&m_blf)) {
 				ld.lifetime = m_blf.lifetime + call Uptime.get();
 				ld.boots = m_blf.boot;
 				call SetLifetimeData.set(&ld);
 			}
-			debug1("halt %"PRIu32" %"PRIu32"+%"PRIu32" g:%u", m_blf.boot, m_blf.lifetime, m_blf.uptime, good);
+			debug1("halt %"PRIu32" %"PRIu32, ld.boots, ld.lifetime);
 		}
 		return SUCCESS;
 	}
