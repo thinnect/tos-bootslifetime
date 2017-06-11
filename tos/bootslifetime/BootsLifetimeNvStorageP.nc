@@ -40,9 +40,7 @@ implementation {
 
 	event error_t StoredLifetimeData.init(void* value, uint8_t length) {
 		if(length == sizeof(lifetime_data_t)) {
-			lifetime_data_t* ld = (lifetime_data_t*)value;
-			m_ld.lifetime = ld->lifetime;
-			m_ld.boots = ld->boots;
+			m_ld = *((lifetime_data_t*)value);
 			return SUCCESS;
 		}
 		return ESIZE;

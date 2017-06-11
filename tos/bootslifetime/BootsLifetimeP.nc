@@ -94,7 +94,7 @@ implementation {
 		lifetime_data_t ld;
 		if(call GetLifetimeData.get(&ld) == SUCCESS) {
 			m_blf.boot = ld.boots + 1;
-			m_blf.lifetime = ld.lifetime;
+			m_blf.lifetime = ld.lifetime + 1; // Add 1 so that 0xFFFFFFFF wraps to 0, otherwise 1 sec won't matter
 			m_blf.uptime = call Uptime.get();
 			blt_protect(&m_blf);
 			debug1("init %"PRIu32" %"PRIu32"+%"PRIu32, m_blf.boot, m_blf.lifetime, m_blf.uptime);
@@ -105,11 +105,14 @@ implementation {
 
 	event error_t Halt.halt(uint32_t grace) {
 		if(m.state > BLT_ST_OFF) {
-			lifetime_data_t ld;
-			ld.lifetime = m_blf.lifetime + call Uptime.get();
-			ld.boots = m_blf.boot;
-			debug1("halt %"PRIu32" %"PRIu32"+%"PRIu32, m_blf.boot, m_blf.lifetime, m_blf.uptime);
-			call SetLifetimeData.set(&ld);
+			bool good = blt_good(&m_blf);
+			if(good) {
+				lifetime_data_t ld;
+				ld.lifetime = m_blf.lifetime + call Uptime.get();
+				ld.boots = m_blf.boot;
+				call SetLifetimeData.set(&ld);
+			}
+			debug1("halt %"PRIu32" %"PRIu32"+%"PRIu32" g:%u", m_blf.boot, m_blf.lifetime, m_blf.uptime, good);
 		}
 		return SUCCESS;
 	}
@@ -123,14 +126,14 @@ implementation {
 					blt_protect(&m_blf);
 					m.state = BLT_ST_WRITE;
 				}
-				else { // Memory corruption .. this is really bad ... try to recover latest info from flash
+				else { // Memory corruption .. this is really bad ... reboot
 					errb1("mem", &m_blf, sizeof(m_blf));
 					call Leds.set(1);
 					call Leds.set(3);
 					call Leds.set(7);
 					while(1); // Stop all execution, force a reboot
 				}
-				call Timer.startOneShot(0);
+				call Timer.startOneShot(BOOTSLIFETIME_ACTION_DELAY_MS);
 				return; // Proceed to next state
 
 			case BLT_ST_READ:
@@ -161,7 +164,7 @@ implementation {
 	}
 
 	event void BlockRead.readDone[uint8_t volume](storage_addr_t addr, void* buf, storage_len_t len, error_t err) {
-		logger(err == SUCCESS ? LOG_DEBUG1: LOG_WARN1, "rD[%u](%"PRIu32",_,%u,%u)", volume, addr, len, err);
+		logger(err == SUCCESS ? LOG_DEBUG1: LOG_WARN1, "rD[%u](%"PRIu32",_,%u,%u) %u", volume, addr, len, err, blt_good(&m_buf));
 		if((err == SUCCESS)&&(blt_good(&m_buf))) {
 			if(m_buf.lifetime + m_buf.uptime > m_blf.lifetime) {
 				m_blf.boot = m_buf.boot + 1;
@@ -181,7 +184,7 @@ implementation {
 		}
 
 		if(m.vol >= volumes) { // Searched through everything
-			debug1("boot %"PRIu32" %"PRIu32"+%"PRIu32, m_blf.boot, m_blf.lifetime, m_blf.uptime);
+			info1("boot %"PRIu32" %"PRIu32"+%"PRIu32, m_blf.boot, m_blf.lifetime, m_blf.uptime);
 
 			m.vol = m.master_vol + 1;
 			if(m.vol >= volumes) {
