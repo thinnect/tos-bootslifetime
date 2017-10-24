@@ -39,11 +39,11 @@ implementation {
 	#define __LOG_LEVEL__ ( LOG_LEVEL_BootsLifetimeP & BASE_LOG_LEVEL )
 	#include "log.h"
 
-	typedef struct boot_lifetime {
-		uint32_t boot;
-		uint32_t lifetime;
-		uint32_t uptime;
-		uint16_t crc;
+	typedef nx_struct boot_lifetime { // because CRC checking assumes
+		nx_uint32_t boot;
+		nx_uint32_t lifetime;
+		nx_uint32_t uptime;
+		nx_uint16_t crc;
 	} boot_lifetime_t;
 
 	enum BootsLifetimeStates {
