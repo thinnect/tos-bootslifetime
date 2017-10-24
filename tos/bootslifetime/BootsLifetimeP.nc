@@ -66,7 +66,7 @@ implementation {
 
 	blf_state_t m = { BLT_ST_OFF, FALSE, 0, 0, 0, 0 };
 
-	boot_lifetime_t m_blf = { 0, 0, 0, 0 };
+	boot_lifetime_t m_blf;
 	boot_lifetime_t m_buf;
 
 	bool blt_good(boot_lifetime_t* blt) {
