@@ -10,6 +10,7 @@
  * @license MIT
  **/
 #include "BootsLifetime.h"
+#include "StorageVolumes.h"
 configuration BootsLifetimeC {
 	provides {
 		interface Boot as StableBoot;
