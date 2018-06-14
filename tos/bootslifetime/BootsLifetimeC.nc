@@ -20,7 +20,6 @@ configuration BootsLifetimeC {
 	}
 	uses {
 		interface Boot; // Must be wired to the correct boot event
-		interface Halt; // May be wired to handle halts
 		interface GetStruct<lifetime_data_t> as GetLifetimeData;
 		interface SetStruct<lifetime_data_t> as SetLifetimeData;
 	}
@@ -34,9 +33,11 @@ implementation {
 	Uptime = BootsLifetimeP.Uptime;
 
 	BootsLifetimeP.Boot = Boot;
-	BootsLifetimeP.Halt = Halt;
 	BootsLifetimeP.GetLifetimeData = GetLifetimeData;
 	BootsLifetimeP.SetLifetimeData = SetLifetimeData;
+
+	components SystemControlC;
+	BootsLifetimeP.Halt -> SystemControlC;
 
 	components new BlockStorageC(VOLUME_BOOTSLIFETIME1) as Vol1;
 	BootsLifetimeP.BlockRead[0] -> Vol1;
