@@ -39,7 +39,8 @@ implementation {
 	#define __LOG_LEVEL__ ( LOG_LEVEL_BootsLifetimeP & BASE_LOG_LEVEL )
 	#include "log.h"
 
-	typedef nx_struct boot_lifetime { // because CRC checking assumes
+	typedef nx_struct boot_lifetime {
+		nx_uint32_t header; // blft - 0x626c6674
 		nx_uint32_t boot;
 		nx_uint32_t lifetime;
 		nx_uint32_t uptime;
@@ -70,11 +71,15 @@ implementation {
 	boot_lifetime_t m_buf;
 
 	bool blt_good(boot_lifetime_t* blt) {
-		uint16_t crc = call Crc.crc16(blt, sizeof(boot_lifetime_t)-sizeof(uint16_t));
-		return crc == blt->crc;
+		if(blt->header == 0x626c6674) {
+			uint16_t crc = call Crc.crc16(blt, sizeof(boot_lifetime_t)-sizeof(uint16_t));
+			return crc == blt->crc;
+		}
+		return FALSE;
 	}
 
 	void blt_protect(boot_lifetime_t* blt) {
+		blt->header = 0x626c6674;
 		blt->crc = call Crc.crc16(blt, sizeof(boot_lifetime_t)-sizeof(uint16_t));
 	}
 
@@ -95,10 +100,16 @@ implementation {
 		if(call GetLifetimeData.get(&ld) == SUCCESS) {
 			m_blf.boot = ld.boots + 1;
 			m_blf.lifetime = ld.lifetime + 1; // Add 1 so that 0xFFFFFFFF wraps to 0, otherwise 1 sec won't matter
-			m_blf.uptime = call Uptime.get();
-			blt_protect(&m_blf);
-			debug1("init %"PRIu32" %"PRIu32"+%"PRIu32, m_blf.boot, m_blf.lifetime, m_blf.uptime);
 		}
+		else {
+			m_blf.boot = 1;
+			m_blf.lifetime = 0;
+		}
+		m_blf.uptime = call Uptime.get();
+		debug1("init %"PRIu32" %"PRIu32"+%"PRIu32, m_blf.boot, m_blf.lifetime, m_blf.uptime);
+
+		blt_protect(&m_blf);
+
 		m.state = BLT_ST_READ;
 		call Timer.startOneShot(0);
 	}
